@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Station {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  name      String
+  city      String?
+  isActive  Boolean  @default(true)
+
+  stops     TrainStop[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([city])
+}
+
+model Train {
+  id          Int      @id @default(autoincrement())
+  number      String   @unique
+  name        String
+  trainType   String?
+
+  stops       TrainStop[]
+  availability AvailabilitySnapshot[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TrainStop {
+  id          Int      @id @default(autoincrement())
+
+  trainId     Int
+  stationId   Int
+
+  arrival     String?
+  departure   String?
+  haltMinutes Int?
+  day         Int?
+  distanceKm  Float?
+  sequence    Int
+
+  train       Train   @relation(fields: [trainId], references: [id], onDelete: Cascade)
+  station     Station @relation(fields: [stationId], references: [id], onDelete: Cascade)
+
+  @@unique([trainId, sequence])
+  @@index([stationId])
+  @@index([trainId])
+}
+
+model AvailabilitySnapshot {
+  id             Int      @id @default(autoincrement())
+
+  trainId        Int
+  sourceStation  String
+  destination    String
+  journeyDate    DateTime
+
+  classCode      String
+  quotaCode      String
+
+  status         String
+  statusCode     String
+
+  availableSeats Int?
+  waitlistNumber Int?
+  waitlistType   String?
+
+  checkedAt      DateTime @default(now())
+
+  train          Train @relation(fields: [trainId], references: [id], onDelete: Cascade)
+
+  @@index([trainId, journeyDate])
+  @@index([sourceStation, destination, journeyDate])
+}
